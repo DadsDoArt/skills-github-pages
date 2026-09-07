@@ -271,15 +271,36 @@
   }
 
   @media (max-width:760px){
-    .layout{flex-direction:column;}
+    /* Mobile drops the fixed-height desktop "app shell" entirely.
+       100vh is unreliable on mobile browsers once the address bar
+       is factored in, and nesting a scrollable pane inside a
+       height-locked body is what was trapping the event list off
+       the bottom of the screen with no way to reach it. Below,
+       the whole page just scrolls normally instead. */
+    html, body{height:auto;}
+    body{overflow-y:auto;overflow-x:hidden;}
+    .layout{flex-direction:column;height:auto;overflow:visible;}
+    main{
+      flex:none;
+      height:55vh;
+      min-height:280px;
+      max-height:480px;
+      order:1;
+    }
     aside{
       width:100%;
-      height:46%;
+      flex:none;
+      height:auto;
+      overflow:visible;
       border-right:none;
       border-bottom:1px solid var(--line);
       order:2;
     }
-    main{height:54%;order:1;}
+    .list{
+      flex:none;
+      overflow:visible;
+      -webkit-overflow-scrolling:touch;
+    }
   }
 </style>
 </head>
@@ -545,6 +566,7 @@ function render(){
         item.addEventListener('click', () => {
           map.setView([v.lat, v.lng], 15, { animate: true });
           markers[key].openPopup();
+          document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
         group.appendChild(item);
       });
@@ -562,6 +584,15 @@ function render(){
 }
 
 render();
+
+// Leaflet doesn't detect container resizes on its own (e.g. rotating
+// a phone, or the mobile browser's address bar showing/hiding), which
+// otherwise leaves the map showing blank/mis-aligned tiles.
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => map.invalidateSize(), 150);
+});
 </script>
 </body>
 </html>
