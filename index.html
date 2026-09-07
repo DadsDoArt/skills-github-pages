@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kinderboekenweek Amsterdam Nieuw-West — Programma &amp; kaart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  /* Palette grounded in the Bibliotheek/OBA brand docs: accent orange
+     ~PMS 021, wordmark anthracite ~PMS 418. Layout itself is my own
+     call, not copied from oba.nl — I couldn't get computed styles off
+     the live site (bot-blocked fetch, no browser connector), so this
+     is the verifiable part: color + type family, not a pixel clone. */
+  :root{
+    --paper:#F2F1EE;
+    --white:#FFFFFF;
+    --ink:#3B3735;
+    --ink-soft:#726C67;
+    --line:#DDDAD3;
+    --oba-orange:#EC6D13;
+
+    --osdorp:#C1442C;
+    --slotermeer:#2F6B4A;
+    --geuzenveld:#2C5A96;
+    --slotervaart:#A9722E;
+    --sloterdijk:#6C4A94;
+    --deaker:#1D7A82;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Work Sans',system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    overflow:hidden;
+  }
+
+  a{color:inherit;}
+
+  header{
+    padding:16px 24px 14px;
+    border-bottom:1px solid var(--line);
+    border-top:4px solid var(--oba-orange);
+    background:var(--white);
+    flex-shrink:0;
+  }
+  header h1{
+    font-family:'Work Sans',sans-serif;
+    font-weight:700;
+    font-size:1.5rem;
+    margin:0 0 2px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:0.92rem;
+  }
+
+  .layout{
+    flex:1;
+    display:flex;
+    min-height:0;
+  }
+
+  aside{
+    width:360px;
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    border-right:1px solid var(--line);
+    background:var(--white);
+    min-height:0;
+  }
+
+  .filters{
+    padding:14px 18px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  .filter-row{
+    margin-bottom:10px;
+  }
+  .filter-row:last-child{margin-bottom:0;}
+  .filter-label{
+    display:block;
+    font-size:0.72rem;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  select{
+    width:100%;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:var(--white);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:0.88rem;
+  }
+  .chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .chip{
+    border:1px solid var(--line);
+    background:var(--white);
+    border-radius:20px;
+    padding:5px 12px;
+    font-size:0.8rem;
+    font-family:inherit;
+    cursor:pointer;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:background .12s, color .12s, border-color .12s;
+  }
+  .chip .dot{
+    width:8px;height:8px;border-radius:50%;flex-shrink:0;
+  }
+  .chip.active{
+    color:var(--white);
+    border-color:transparent;
+  }
+  .chip:focus-visible, select:focus-visible, .list-item:focus-visible{
+    outline:2px solid var(--oba-orange);
+    outline-offset:2px;
+  }
+
+  .result-count{
+    padding:10px 18px 6px;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+
+  .list{
+    flex:1;
+    overflow-y:auto;
+    padding:4px 10px 18px;
+  }
+  .venue-group{
+    margin:10px 8px 4px;
+  }
+  .venue-group h2{
+    font-family:'Work Sans',sans-serif;
+    font-size:0.98rem;
+    font-weight:700;
+    margin:0 0 2px;
+    display:flex;
+    align-items:baseline;
+    gap:7px;
+  }
+  .venue-group h2 .dot{
+    width:9px;height:9px;border-radius:50%;flex-shrink:0;
+    transform:translateY(-1px);
+  }
+  .venue-group .addr{
+    font-size:0.74rem;
+    color:var(--ink-soft);
+    margin:0 0 6px;
+  }
+  .list-item{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:1px solid transparent;
+    border-radius:8px;
+    padding:7px 8px;
+    margin-bottom:3px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .list-item:hover{background:var(--paper);}
+  .list-item .when{
+    font-size:0.72rem;
+    font-weight:600;
+    color:var(--ink-soft);
+  }
+  .list-item .title{
+    font-size:0.86rem;
+    font-weight:500;
+    margin:1px 0 2px;
+  }
+  .list-item .org{
+    font-size:0.74rem;
+    color:var(--ink-soft);
+  }
+  .badge-tbc{
+    display:inline-block;
+    font-size:0.66rem;
+    font-weight:700;
+    color:var(--oba-orange);
+    border:1px solid var(--oba-orange);
+    border-radius:10px;
+    padding:1px 6px;
+    margin-left:5px;
+    vertical-align:middle;
+  }
+
+  .empty-state{
+    padding:24px 18px;
+    color:var(--ink-soft);
+    font-size:0.86rem;
+  }
+
+  main{
+    flex:1;
+    position:relative;
+    min-width:0;
+  }
+  #map{
+    width:100%;
+    height:100%;
+    background:var(--paper);
+  }
+
+  .pin{
+    width:26px;height:26px;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    border:2px solid var(--white);
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pin span{
+    transform:rotate(45deg);
+    color:var(--white);
+    font-size:11px;
+    font-weight:700;
+    font-family:'Work Sans',sans-serif;
+  }
+
+  .popup-venue{
+    font-family:'Work Sans',sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    margin:0 0 2px;
+  }
+  .popup-addr{
+    font-size:0.76rem;
+    color:var(--ink-soft);
+    margin:0 0 8px;
+  }
+  .popup-event{
+    padding:6px 0;
+    border-top:1px solid var(--line);
+  }
+  .popup-event:first-of-type{border-top:none;}
+  .popup-event .when{font-size:0.74rem;font-weight:600;color:var(--ink-soft);}
+  .popup-event .title{font-size:0.86rem;font-weight:600;margin:1px 0 2px;}
+  .popup-event .org{font-size:0.76rem;color:var(--ink-soft);}
+  .popup-event .note{font-size:0.78rem;margin-top:3px;}
+  .leaflet-popup-content{margin:12px 14px;min-width:220px;max-width:260px;}
+  .leaflet-popup-content-wrapper{border-radius:10px;}
+
+  .approx-flag{
+    font-size:0.68rem;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+
+  @media (max-width:760px){
+    .layout{flex-direction:column;}
+    aside{
+      width:100%;
+      height:46%;
+      border-right:none;
+      border-bottom:1px solid var(--line);
+      order:2;
+    }
+    main{height:54%;order:1;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kinderboekenweek Amsterdam Nieuw-West</h1>
+  <p>30 september – 11 oktober · alle activiteiten in de buurt, op de kaart</p>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="filters">
+      <div class="filter-row">
+        <span class="filter-label">Datum</span>
+        <select id="dateFilter"></select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Buurt</span>
+        <div class="chips" id="neighbourhoodChips"></div>
+      </div>
+    </div>
+    <div class="result-count" id="resultCount"></div>
+    <div class="list" id="list"></div>
+  </aside>
+  <main>
+    <div id="map" role="application" aria-label="Kaart met locaties van Kinderboekenweek-activiteiten in Amsterdam Nieuw-West"></div>
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ---------------------------------------------------------------------
+   DATA
+   Venue coordinates are best-effort placements from verified street
+   addresses (checked against oba.nl, iamsterdam.com, sezo.nl,
+   storytelling-centre.nl, lolalijn.nl and wijzijnnieuwwest.nl), not a
+   geocoding-API lookup. Two are flagged approx:true because the source
+   sheet didn't give a clean address ("Natuukamer", "Pietercalandlaan
+   999") — nudge these once you confirm the exact spot.
+   No personal emails or phone numbers are included anywhere below.
+--------------------------------------------------------------------- */
+
+const NEIGHBOURHOODS = {
+  "Osdorp":      { color: "var(--osdorp)",      hex: "#C1442C" },
+  "Slotermeer":  { color: "var(--slotermeer)",  hex: "#2F6B4A" },
+  "Geuzenveld":  { color: "var(--geuzenveld)",  hex: "#2C5A96" },
+  "Slotervaart": { color: "var(--slotervaart)", hex: "#A9722E" },
+  "Sloterdijk":  { color: "var(--sloterdijk)",  hex: "#6C4A94" },
+  "De Aker":     { color: "var(--deaker)",      hex: "#1D7A82" }
+};
+
+const VENUES = {
+  osdorp:        { name: "OBA Osdorp", address: "Osdorpplein 16, Amsterdam", neighbourhood: "Osdorp", lat: 52.3609, lng: 4.7908 },
+  slotermeer:    { name: "OBA Slotermeer (De Honingraat)", address: "Slotermeerlaan 103E, Amsterdam", neighbourhood: "Slotermeer", lat: 52.3810, lng: 4.8290 },
+  geuzenveld:    { name: "OBA Geuzenveld (Het Pluspunt)", address: "Albardakade 3, Amsterdam", neighbourhood: "Geuzenveld", lat: 52.3766, lng: 4.8065 },
+  postjesweg:    { name: "OBA Postjesweg", address: "Postjesweg 340, Amsterdam", neighbourhood: "Slotervaart", lat: 52.3612, lng: 4.8388 },
+  breen:         { name: "BREEN", address: "Burgemeester Rendorpstraat 1, Amsterdam", neighbourhood: "Slotermeer", lat: 52.3852, lng: 4.8283 },
+  woortmanplein: { name: "Joop Woortmanplein", address: "Joop Woortmanplein, Amsterdam (De Aker)", neighbourhood: "De Aker", lat: 52.3560, lng: 4.7735 },
+  kikker:        { name: "De Kikker (SEZO)", address: "Evertsweertplantsoen 3a, Amsterdam", neighbourhood: "Osdorp", lat: 52.3660, lng: 4.7975 },
+  meervoud:      { name: "Het Meervoud (SEZO)", address: "August Allebéplein, Amsterdam", neighbourhood: "Slotervaart", lat: 52.3630, lng: 4.8280 },
+  lolalijn:      { name: "Lola Lijn Buurtkamer", address: "Radarweg 309, Amsterdam", neighbourhood: "Sloterdijk", lat: 52.3906, lng: 4.8389 },
+  perron32:      { name: "Perron 32 / Station Wildeman", address: "Notweg 32, Amsterdam", neighbourhood: "Osdorp", lat: 52.3690, lng: 4.7830 },
+  pietercalandlaan: { name: "Pietercalandlaan 999", address: "Pietercalandlaan 999, Amsterdam", neighbourhood: "Osdorp", lat: 52.3700, lng: 4.8010, approx: true },
+  natuurkamer:   { name: "De Natuurkamer", address: "President Allendelaan 4, Amsterdam — listed as \u2018Natuukamer\u2019 in the source schedule", neighbourhood: "Osdorp", lat: 52.3630, lng: 4.7810, approx: true }
+};
+
+const EVENTS = [
+  { venue:"osdorp", dates:["2026-10-03"], time:"11:00", title:"Kinderboekenweek-opening & Kinderboekenfestival", org:"OBA Nieuw-West", age:"Alle leeftijden" },
+  { venue:"slotermeer", dates:["2026-09-30","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-10","2026-10-11"], time:"hele week", title:"Verlicht je Verhaal", org:"OBA — Maakplaats", age:"Alle leeftijden", note:"Verhalen omgetoverd tot lampjes, te bewonderen de hele Kinderboekenweek." },
+  { venue:"breen", dates:["2026-10-04"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop." },
+  { venue:"woortmanplein", dates:["2026-10-05"], time:"10:00", title:"Voorlezen", org:"Eigenwijks / GMK", age:"Peuters" },
+  { venue:"slotermeer", dates:["2026-10-05"], time:"15:30", title:"Knutsel magazine", org:"Stichting Dock", age:"" },
+  { venue:"woortmanplein", dates:["2026-10-06"], time:"14:00", title:"Voorlezen", org:"Eigenwijks / GMK", age:"4+" },
+  { venue:"osdorp", dates:["2026-10-07"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"" },
+  { venue:"osdorp", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
+  { venue:"geuzenveld", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
+  { venue:"postjesweg", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
+  { venue:"slotermeer", dates:["2026-10-09"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"" },
+  { venue:"slotermeer", dates:["2026-10-10"], time:"14:00", title:"Verhalenbende in de OBA", org:"Storytelling Centre", age:"", note:"2x vertelvoorstelling + doorlopende workshop: hoe maak je een boek of voorstelling?" },
+  { venue:"breen", dates:["2026-10-11"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop." },
+  { venue:"kikker", dates:["2026-10-01"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
+  { venue:"slotermeer", dates:["2026-10-07"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
+  { venue:"meervoud", dates:["2026-10-08"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
+  { venue:"geuzenveld", dates:["2026-10-09"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
+  { venue:"perron32", dates:["2026-10-09"], time:null, title:"Voorlezen & workshop met schrijfster Floortje Vermeer", org:"Samenwonen-Samenleven", age:"", tbc:true },
+  { venue:"lolalijn", dates:["2026-10-02"], time:"15:30", title:"Voorlezen (Floortje Vermeer) & poppenspel (Wojciech Stachura)", org:"Lola Lijn Buurtkamer", age:"6+" },
+  { venue:"pietercalandlaan", dates:["2026-10-07"], time:null, title:"Activiteit — details volgen", org:"Stichting Jonge Makers", age:"", tbc:true },
+  { venue:"slotermeer", dates:["2026-10-06"], time:"15:30", title:"Voorlezen: Borden Vol Verhalen", org:"Nikki Manger", age:"6+" },
+  { venue:"geuzenveld", dates:["2026-09-30","2026-10-01","2026-10-05","2026-10-06","2026-10-07","2026-10-08"], time:"10:00", title:"Met de Buurtcampus op voorleesreis", org:"Buurtcampus (HvA)", age:"0–4 jaar", note:"Voorlezen in het Nederlands en een andere taal, gevolgd door een kleurplaat of knutselactiviteit." },
+  { venue:"osdorp", dates:["2026-10-10"], time:"09:30", title:"Polish Reading Art Adventure", org:"Art Connects New West (Iza & Liam)", age:"2–6 jaar", note:"Poolse kinderboeken voorlezen, gevolgd door een knutselactiviteit." },
+  { venue:"natuurkamer", dates:["2026-10-11"], time:"10:00", title:"Greek Mamas NL x Dads Do Art Adventure", org:"Dads Do Art / Greek Mamas NL (Vivi & Liam)", age:"2–6 jaar", note:"Griekse kinderboeken voorlezen, gevolgd door een knutselactiviteit." },
+  { venue:"osdorp", dates:["2026-10-11"], time:"13:00", title:"Spanish Reading Art Adventure", org:"Dads Do Art / Spanish Mamas (Alba & Esperanza)", age:"2–6 jaar", tbc:true, note:"Spaanse kinderboeken voorlezen, gevolgd door een knutselactiviteit." }
+];
+
+/* ---------------------------------------------------------------------
+   BUILD LOOKUPS
+--------------------------------------------------------------------- */
+
+function fmtDate(iso){
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("nl-NL", { weekday:"short", day:"numeric", month:"short" });
+}
+
+// flatten events into per-date rows for filtering, but keep group identity
+const ROWS = [];
+EVENTS.forEach((ev, idx) => {
+  ev.dates.forEach(date => {
+    ROWS.push({ ...ev, date, _id: idx + "-" + date });
+  });
+});
+
+const ALL_DATES = [...new Set(ROWS.map(r => r.date))].sort();
+
+let activeDate = "all";
+let activeNeighbourhoods = new Set(Object.keys(NEIGHBOURHOODS));
+
+/* ---------------------------------------------------------------------
+   MAP SETUP
+--------------------------------------------------------------------- */
+
+const map = L.map('map', { scrollWheelZoom: true }).setView([52.372, 4.812], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+function makeIcon(hex, letter){
+  return L.divIcon({
+    className: '',
+    html: `<div class="pin" style="background:${hex}"><span>${letter}</span></div>`,
+    iconSize: [26,26],
+    iconAnchor: [13,26],
+    popupAnchor: [0,-24]
+  });
+}
+
+const markers = {}; // venueKey -> {marker, popupEl}
+
+Object.entries(VENUES).forEach(([key, v]) => {
+  const nb = NEIGHBOURHOODS[v.neighbourhood];
+  const icon = makeIcon(nb.hex, v.name[0]);
+  const marker = L.marker([v.lat, v.lng], { icon, title: v.name }).addTo(map);
+  markers[key] = marker;
+});
+
+/* ---------------------------------------------------------------------
+   RENDER
+--------------------------------------------------------------------- */
+
+const dateFilterEl = document.getElementById('dateFilter');
+const chipsEl = document.getElementById('neighbourhoodChips');
+const listEl = document.getElementById('list');
+const countEl = document.getElementById('resultCount');
+
+// date dropdown
+const optAll = document.createElement('option');
+optAll.value = 'all';
+optAll.textContent = 'Alle data';
+dateFilterEl.appendChild(optAll);
+ALL_DATES.forEach(d => {
+  const o = document.createElement('option');
+  o.value = d;
+  o.textContent = fmtDate(d);
+  dateFilterEl.appendChild(o);
+});
+dateFilterEl.addEventListener('change', () => {
+  activeDate = dateFilterEl.value;
+  render();
+});
+
+// neighbourhood chips
+Object.entries(NEIGHBOURHOODS).forEach(([name, nb]) => {
+  const chip = document.createElement('button');
+  chip.className = 'chip active';
+  chip.type = 'button';
+  chip.style.background = nb.hex;
+  chip.style.color = '#FFFDF8';
+  chip.style.borderColor = 'transparent';
+  chip.innerHTML = `<span class="dot" style="background:#FFFDF8"></span>${name}`;
+  chip.addEventListener('click', () => {
+    if (activeNeighbourhoods.has(name)) {
+      activeNeighbourhoods.delete(name);
+      chip.classList.remove('active');
+      chip.style.background = 'var(--white)';
+      chip.style.color = 'var(--ink-soft)';
+      chip.style.borderColor = 'var(--line)';
+      chip.querySelector('.dot').style.background = nb.hex;
+    } else {
+      activeNeighbourhoods.add(name);
+      chip.classList.add('active');
+      chip.style.background = nb.hex;
+      chip.style.color = '#FFFDF8';
+      chip.style.borderColor = 'transparent';
+      chip.querySelector('.dot').style.background = '#FFFDF8';
+    }
+    render();
+  });
+  chipsEl.appendChild(chip);
+});
+
+function rowsForVenue(venueKey){
+  return ROWS.filter(r => r.venue === venueKey)
+    .filter(r => activeDate === 'all' || r.date === activeDate)
+    .sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function popupHTML(venueKey){
+  const v = VENUES[venueKey];
+  const rows = rowsForVenue(venueKey);
+  let html = `<div class="popup-venue">${v.name}</div><div class="popup-addr">${v.address}${v.approx ? ' <span class="approx-flag">(approx.)</span>' : ''}</div>`;
+  rows.forEach(r => {
+    html += `<div class="popup-event">
+      <div class="when">${fmtDate(r.date)}${r.time && r.time !== 'hele week' ? ' · ' + r.time : ''}${r.tbc ? ' <span class="badge-tbc">TBC</span>' : ''}</div>
+      <div class="title">${r.title}</div>
+      <div class="org">${r.org}${r.age ? ' · ' + r.age : ''}</div>
+      ${r.note ? `<div class="note">${r.note}</div>` : ''}
+    </div>`;
+  });
+  return html;
+}
+
+function render(){
+  // filter which venues have any visible rows
+  const visibleVenueKeys = Object.keys(VENUES).filter(key => {
+    const v = VENUES[key];
+    if (!activeNeighbourhoods.has(v.neighbourhood)) return false;
+    return rowsForVenue(key).length > 0;
+  });
+
+  // markers
+  Object.entries(markers).forEach(([key, marker]) => {
+    const visible = visibleVenueKeys.includes(key);
+    const el = marker.getElement();
+    if (el) el.style.display = visible ? '' : 'none';
+    marker.unbindPopup();
+    if (visible) marker.bindPopup(popupHTML(key));
+  });
+
+  // list
+  listEl.innerHTML = '';
+  let totalRows = 0;
+  visibleVenueKeys
+    .sort((a,b) => VENUES[a].name.localeCompare(VENUES[b].name))
+    .forEach(key => {
+      const v = VENUES[key];
+      const nb = NEIGHBOURHOODS[v.neighbourhood];
+      const rows = rowsForVenue(key);
+      totalRows += rows.length;
+
+      const group = document.createElement('div');
+      group.className = 'venue-group';
+      group.innerHTML = `<h2><span class="dot" style="background:${nb.hex}"></span>${v.name}</h2><p class="addr">${v.address}${v.approx ? ' <span class="approx-flag">(approx.)</span>' : ''}</p>`;
+
+      rows.forEach(r => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'list-item';
+        item.innerHTML = `<div class="when">${fmtDate(r.date)}${r.time && r.time !== 'hele week' ? ' · ' + r.time : ''}${r.tbc ? ' <span class="badge-tbc">TBC</span>' : ''}</div>
+          <div class="title">${r.title}</div>
+          <div class="org">${r.org}${r.age ? ' · ' + r.age : ''}</div>`;
+        item.addEventListener('click', () => {
+          map.setView([v.lat, v.lng], 15, { animate: true });
+          markers[key].openPopup();
+        });
+        group.appendChild(item);
+      });
+
+      listEl.appendChild(group);
+    });
+
+  countEl.textContent = totalRows === 0
+    ? 'Geen activiteiten gevonden voor deze filters.'
+    : `${totalRows} activiteit${totalRows === 1 ? '' : 'en'} · ${visibleVenueKeys.length} locatie${visibleVenueKeys.length === 1 ? '' : 's'}`;
+
+  if (totalRows === 0){
+    listEl.innerHTML = '<div class="empty-state">Geen activiteiten gevonden. Probeer een andere datum of buurt.</div>';
+  }
+}
+
+render();
+</script>
+</body>
+</html>
