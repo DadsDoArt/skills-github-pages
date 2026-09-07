@@ -226,18 +226,16 @@
   }
 
   .pin{
-    width:26px;height:26px;
-    border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    border:2px solid var(--white);
-    box-shadow:0 2px 6px rgba(0,0,0,.35);
+    width:28px;height:28px;
+    border-radius:50%;
+    border:2.5px solid var(--white);
+    box-shadow:0 2px 5px rgba(0,0,0,.4);
     display:flex;align-items:center;justify-content:center;
   }
   .pin span{
-    transform:rotate(45deg);
     color:var(--white);
-    font-size:11px;
-    font-weight:700;
+    font-size:12px;
+    font-weight:800;
     font-family:'Work Sans',sans-serif;
   }
 
@@ -263,6 +261,7 @@
   .popup-event .note{font-size:0.78rem;margin-top:3px;}
   .leaflet-popup-content{margin:12px 14px;min-width:220px;max-width:260px;}
   .leaflet-popup-content-wrapper{border-radius:10px;}
+  .leaflet-popup-scrolled{-webkit-overflow-scrolling:touch;padding-right:4px;}
 
   .approx-flag{
     font-size:0.68rem;
@@ -433,9 +432,9 @@ function makeIcon(hex, letter){
   return L.divIcon({
     className: '',
     html: `<div class="pin" style="background:${hex}"><span>${letter}</span></div>`,
-    iconSize: [26,26],
-    iconAnchor: [13,26],
-    popupAnchor: [0,-24]
+    iconSize: [28,28],
+    iconAnchor: [14,14],
+    popupAnchor: [0,-16]
   });
 }
 
@@ -538,7 +537,18 @@ function render(){
     const el = marker.getElement();
     if (el) el.style.display = visible ? '' : 'none';
     marker.unbindPopup();
-    if (visible) marker.bindPopup(popupHTML(key));
+    if (visible) {
+      // Popups aren't capped by default, so a venue with several events
+      // (OBA Slotermeer has six across the week) opens a popup taller
+      // than the map itself — Leaflet's map container clips overflow,
+      // so the bottom of the list was getting cut off with no way to
+      // reach it. maxHeight makes Leaflet give the popup its own
+      // internal scrollbar instead of letting it get clipped.
+      marker.bindPopup(popupHTML(key), {
+        maxHeight: Math.max(160, map.getSize().y - 56),
+        autoPanPadding: [16, 16]
+      });
+    }
   });
 
   // list
@@ -591,7 +601,10 @@ render();
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => map.invalidateSize(), 150);
+  resizeTimer = setTimeout(() => {
+    map.invalidateSize();
+    render(); // also refreshes each popup's maxHeight for the new map size
+  }, 150);
 });
 </script>
 </body>
