@@ -28,6 +28,7 @@
     --slotervaart:#A9722E;
     --sloterdijk:#6C4A94;
     --deaker:#1D7A82;
+    --sierplein:#B23A6B;
   }
 
   *{box-sizing:border-box;}
@@ -336,20 +337,21 @@
    DATA
    Venue coordinates are best-effort placements from verified street
    addresses (checked against oba.nl, iamsterdam.com, sezo.nl,
-   storytelling-centre.nl, lolalijn.nl and wijzijnnieuwwest.nl), not a
-   geocoding-API lookup. Two are flagged approx:true because the source
-   sheet didn't give a clean address ("Natuukamer", "Pietercalandlaan
-   999") — nudge these once you confirm the exact spot.
-   No personal emails or phone numbers are included anywhere below.
+   storytelling-centre.nl, lolalijn.nl, casasofia.nl and beta-office.com),
+   not a geocoding-API lookup. Four are flagged approx:true because the
+   final sheet gives no street address for them at all ("De Natuukamer",
+   "Stichting Jonge Makers", "Casa Sofia", "Ru Paré") — nudge these once
+   confirmed. No personal emails or phone numbers are included below.
 --------------------------------------------------------------------- */
 
 const NEIGHBOURHOODS = {
-  "Osdorp":      { color: "var(--osdorp)",      hex: "#C1442C" },
-  "Slotermeer":  { color: "var(--slotermeer)",  hex: "#2F6B4A" },
-  "Geuzenveld":  { color: "var(--geuzenveld)",  hex: "#2C5A96" },
-  "Slotervaart": { color: "var(--slotervaart)", hex: "#A9722E" },
-  "Sloterdijk":  { color: "var(--sloterdijk)",  hex: "#6C4A94" },
-  "De Aker":     { color: "var(--deaker)",      hex: "#1D7A82" }
+  "Osdorp":        { color: "var(--osdorp)",        hex: "#C1442C" },
+  "Slotermeer":    { color: "var(--slotermeer)",    hex: "#2F6B4A" },
+  "Geuzenveld":    { color: "var(--geuzenveld)",    hex: "#2C5A96" },
+  "Slotervaart":   { color: "var(--slotervaart)",   hex: "#A9722E" },
+  "Sloterdijk":    { color: "var(--sloterdijk)",    hex: "#6C4A94" },
+  "De Aker":       { color: "var(--deaker)",        hex: "#1D7A82" },
+  "Sierpleinbuurt":{ color: "var(--sierplein)",     hex: "#B23A6B" }
 };
 
 const VENUES = {
@@ -358,41 +360,66 @@ const VENUES = {
   geuzenveld:    { name: "OBA Geuzenveld (Het Pluspunt)", address: "Albardakade 3, Amsterdam", neighbourhood: "Geuzenveld", lat: 52.3766, lng: 4.8065 },
   postjesweg:    { name: "OBA Postjesweg", address: "Postjesweg 340, Amsterdam", neighbourhood: "Slotervaart", lat: 52.3612, lng: 4.8388 },
   breen:         { name: "BREEN", address: "Burgemeester Rendorpstraat 1, Amsterdam", neighbourhood: "Slotermeer", lat: 52.3852, lng: 4.8283 },
-  woortmanplein: { name: "Joop Woortmanplein", address: "Joop Woortmanplein, Amsterdam (De Aker)", neighbourhood: "De Aker", lat: 52.3560, lng: 4.7735 },
+  woortmanplein: { name: "Joop Woortmanplein (buiten)", address: "Joop Woortmanplein, Amsterdam (De Aker)", neighbourhood: "De Aker", lat: 52.3560, lng: 4.7735 },
   kikker:        { name: "De Kikker (SEZO)", address: "Evertsweertplantsoen 3a, Amsterdam", neighbourhood: "Osdorp", lat: 52.3660, lng: 4.7975 },
   meervoud:      { name: "Het Meervoud (SEZO)", address: "August Allebéplein, Amsterdam", neighbourhood: "Slotervaart", lat: 52.3630, lng: 4.8280 },
   lolalijn:      { name: "Lola Lijn Buurtkamer", address: "Radarweg 309, Amsterdam", neighbourhood: "Sloterdijk", lat: 52.3906, lng: 4.8389 },
   perron32:      { name: "Perron 32 / Station Wildeman", address: "Notweg 32, Amsterdam", neighbourhood: "Osdorp", lat: 52.3690, lng: 4.7830 },
-  pietercalandlaan: { name: "Pietercalandlaan 999", address: "Pietercalandlaan 999, Amsterdam", neighbourhood: "Osdorp", lat: 52.3700, lng: 4.8010, approx: true },
-  natuurkamer:   { name: "De Natuurkamer", address: "President Allendelaan 4, Amsterdam — listed as \u2018Natuukamer\u2019 in the source schedule", neighbourhood: "Osdorp", lat: 52.3630, lng: 4.7810, approx: true }
+  natuurkamer:   { name: "De Natuurkamer", address: "President Allendelaan 4, Amsterdam — listed as \u2018De Natuukamer\u2019 in the source schedule", neighbourhood: "Osdorp", lat: 52.3630, lng: 4.7810, approx: true },
+  jongemakers:   { name: "Stichting Jonge Makers (Community Café)", address: "No address given in the final sheet — placed near Pieter Calandlaan, Osdorp, where earlier drafts of this row pointed. Confirm with Sarah.", neighbourhood: "Osdorp", lat: 52.3700, lng: 4.8010, approx: true },
+  casasofia:     { name: "Casa Sofia", address: "Ottho Heldringstraat 3, Amsterdam (Staalmanbuurt / Slotervaart-Zuid)", neighbourhood: "Sierpleinbuurt", lat: 52.3545, lng: 4.8175, approx: true },
+  rupare:        { name: "Ru Paré Community", address: "Chris Lebeaustraat, Amsterdam (Slotervaart-Noord) — no house number found", neighbourhood: "Slotervaart", lat: 52.3665, lng: 4.8165, approx: true }
 };
 
 const EVENTS = [
   { venue:"osdorp", dates:["2026-10-03"], time:"11:00", title:"Kinderboekenweek-opening & Kinderboekenfestival", org:"OBA Nieuw-West", age:"Alle leeftijden" },
-  { venue:"slotermeer", dates:["2026-09-30","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-10","2026-10-11"], time:"hele week", title:"Verlicht je Verhaal", org:"OBA — Maakplaats", age:"Alle leeftijden", note:"Verhalen omgetoverd tot lampjes, te bewonderen de hele Kinderboekenweek." },
-  { venue:"breen", dates:["2026-10-04"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop." },
-  { venue:"woortmanplein", dates:["2026-10-05"], time:"10:00", title:"Voorlezen", org:"Eigenwijks / GMK", age:"Peuters" },
-  { venue:"slotermeer", dates:["2026-10-05"], time:"15:30", title:"Knutsel magazine", org:"Stichting Dock", age:"" },
-  { venue:"woortmanplein", dates:["2026-10-06"], time:"14:00", title:"Voorlezen", org:"Eigenwijks / GMK", age:"4+" },
-  { venue:"osdorp", dates:["2026-10-07"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"" },
-  { venue:"osdorp", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
-  { venue:"geuzenveld", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
-  { venue:"postjesweg", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"" },
-  { venue:"slotermeer", dates:["2026-10-09"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"" },
-  { venue:"slotermeer", dates:["2026-10-10"], time:"14:00", title:"Verhalenbende in de OBA", org:"Storytelling Centre", age:"", note:"2x vertelvoorstelling + doorlopende workshop: hoe maak je een boek of voorstelling?" },
-  { venue:"breen", dates:["2026-10-11"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop." },
-  { venue:"kikker", dates:["2026-10-01"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
-  { venue:"slotermeer", dates:["2026-10-07"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
-  { venue:"meervoud", dates:["2026-10-08"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
-  { venue:"geuzenveld", dates:["2026-10-09"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar" },
-  { venue:"perron32", dates:["2026-10-09"], time:null, title:"Voorlezen & workshop met schrijfster Floortje Vermeer", org:"Samenwonen-Samenleven", age:"", tbc:true },
+  { venue:"slotermeer", dates:["2026-09-30","2026-10-01","2026-10-02","2026-10-03","2026-10-04","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-10","2026-10-11"], time:"hele week", title:"Verlicht je Verhaal", org:"OBA — Maakplaats", age:"Alle leeftijden", note:"Ervaar de verhalen van de lampjes en kom langs!" },
+
+  { venue:"geuzenveld", dates:["2026-09-30"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Organisaties uit het Pluspunt", age:"0–4 jaar" },
+  { venue:"geuzenveld", dates:["2026-10-01"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Organisaties uit het Pluspunt", age:"0–4 jaar", note:"Ga mee op voorleesreis rond de wereld!" },
+  { venue:"geuzenveld", dates:["2026-10-02"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Organisaties uit het Pluspunt", age:"" },
+  { venue:"geuzenveld", dates:["2026-10-05"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Buurtcampus", age:"0–4 jaar", note:"Ga mee op voorleesreis rond de wereld!" },
+  { venue:"geuzenveld", dates:["2026-10-06"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Buurtcampus", age:"0–4 jaar", note:"Ga mee op voorleesreis rond de wereld!" },
+  { venue:"geuzenveld", dates:["2026-10-07"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Organisaties uit het Pluspunt", age:"0–4 jaar", note:"Ga mee op voorleesreis rond de wereld!" },
+  { venue:"geuzenveld", dates:["2026-10-08"], time:"10:00", title:"Met het Pluspunt op voorleesreis", org:"Organisaties uit het Pluspunt", age:"0–4 jaar", note:"Ga mee op voorleesreis rond de wereld!" },
+
+  { venue:"casasofia", dates:["2026-09-30"], time:"12:00", title:"Kids Poëzie", org:"Casa Sofia (Camil Art)", age:"6+" },
+  { venue:"casasofia", dates:["2026-10-07"], time:"12:00", title:"Voorlezen en workshop Arabisch Letters", org:"Casa Sofia (Camil Art)", age:"6+" },
+
+  { venue:"kikker", dates:["2026-10-01"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar", note:"Voorleesfeestje." },
+  { venue:"slotermeer", dates:["2026-10-07"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar", note:"Voorlezen." },
+  { venue:"meervoud", dates:["2026-10-08"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar", note:"Voorlezen." },
+  { venue:"geuzenveld", dates:["2026-10-09"], time:"09:30", title:"Spelinloop — interactief voorlezen", org:"SEZO Spel & Opvoeden", age:"0–4 jaar", note:"Voorlezen." },
+
   { venue:"lolalijn", dates:["2026-10-02"], time:"15:30", title:"Voorlezen (Floortje Vermeer) & poppenspel (Wojciech Stachura)", org:"Lola Lijn Buurtkamer", age:"6+" },
-  { venue:"pietercalandlaan", dates:["2026-10-07"], time:null, title:"Activiteit — details volgen", org:"Stichting Jonge Makers", age:"", tbc:true },
-  { venue:"slotermeer", dates:["2026-10-06"], time:"15:30", title:"Voorlezen: Borden Vol Verhalen", org:"Nikki Manger", age:"6+" },
-  { venue:"geuzenveld", dates:["2026-09-30","2026-10-01","2026-10-05","2026-10-06","2026-10-07","2026-10-08"], time:"10:00", title:"Met de Buurtcampus op voorleesreis", org:"Buurtcampus (HvA)", age:"0–4 jaar", note:"Voorlezen in het Nederlands en een andere taal, gevolgd door een kleurplaat of knutselactiviteit." },
-  { venue:"osdorp", dates:["2026-10-10"], time:"09:30", title:"Polish Reading Art Adventure", org:"Art Connects New West (Iza & Liam)", age:"2–6 jaar", note:"Poolse kinderboeken voorlezen, gevolgd door een knutselactiviteit." },
-  { venue:"natuurkamer", dates:["2026-10-11"], time:"10:00", title:"Greek Mamas NL x Dads Do Art Adventure", org:"Dads Do Art / Greek Mamas NL (Vivi & Liam)", age:"2–6 jaar", note:"Griekse kinderboeken voorlezen, gevolgd door een knutselactiviteit." },
-  { venue:"osdorp", dates:["2026-10-11"], time:"13:00", title:"Spanish Reading Art Adventure", org:"Dads Do Art / Spanish Mamas (Alba & Esperanza)", age:"2–6 jaar", tbc:true, note:"Spaanse kinderboeken voorlezen, gevolgd door een knutselactiviteit." }
+
+  { venue:"breen", dates:["2026-10-04"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop, thema Kinderboekenweek. Hoe maak je een boek of voorstelling? Van het verhaal verzinnen tot de presentatie." },
+  { venue:"breen", dates:["2026-10-11"], time:"15:00", title:"Verhalenbende", org:"Storytelling Centre", age:"6+", note:"Vertelvoorstelling en workshop, thema Kinderboekenweek. Hoe maak je een boek of voorstelling? Van het verhaal verzinnen tot de presentatie." },
+
+  { venue:"woortmanplein", dates:["2026-10-05"], time:"10:00", title:"Voorlezen door Eigenwijks en GMK", org:"Eigenwijks / GMK", age:"", note:"Voorleesfeestje." },
+  { venue:"woortmanplein", dates:["2026-10-06"], time:"14:00", title:"Voorlezen door Eigenwijks en GMK", org:"Eigenwijks / GMK", age:"4+", note:"Voorleesfeestje." },
+
+  { venue:"perron32", dates:["2026-10-05"], time:"15:00", title:"Voorlezen en workshop met schrijfster Floortje Vermeer", org:"Samenwonen-Samenleven", age:"" },
+
+  { venue:"slotermeer", dates:["2026-10-05"], time:"15:30", title:"Eigen boekje maken", org:"Stichting Dock", age:"4+", note:"Aan de slag met creativiteit, plezier en leren, en ga met je eigen boekje naar huis!" },
+  { venue:"slotermeer", dates:["2026-10-06"], time:"15:30", title:"Voorlezen: Borden Vol Verhalen", org:"Nikki Manger", age:"6+", note:"Voorlezen over eten, tussen een tentoonstelling over de gerechten van Nieuw-West." },
+  { venue:"slotermeer", dates:["2026-10-09"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"", note:"Voorlezen en knutselen." },
+  { venue:"slotermeer", dates:["2026-10-10"], time:"14:00", title:"Verhalenbende in de OBA", org:"Storytelling Centre", age:"", note:"2x vertelvoorstelling en doorlopende workshop: hoe maak je een boek of voorstelling? Van het verhaal verzinnen tot de presentatie." },
+
+  { venue:"osdorp", dates:["2026-10-07"], time:"15:30", title:"Voorleesfeestje", org:"OBA", age:"", note:"Voorlezen en knutselen." },
+  { venue:"slotermeer", dates:["2026-10-07"], time:"09:30", title:"Spelinloop — interactief voorlezen (Honingraat)", org:"SEZO Spel & Opvoeden", age:"0–4 jaar", note:"Voorlezen." },
+  { venue:"jongemakers", dates:["2026-10-07"], time:"14:30", title:"Jonge Verhaalmakers", org:"Stichting Jonge Makers (Sarah)", age:"", note:"Voorlezen & creatieve workshop in het Community Café." },
+  { venue:"jongemakers", dates:["2026-10-09"], time:"16:00", title:"Jonge Verhaalmakers", org:"Stichting Jonge Makers", age:"", note:"Voorlezen & creatieve workshop in het Community Café." },
+
+  { venue:"osdorp", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"", note:"Voorlezen voor de allerkleinste." },
+  { venue:"geuzenveld", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"", note:"Voorlezen voor de allerkleinste." },
+  { venue:"postjesweg", dates:["2026-10-09"], time:"10:00", title:"Boek op schoot", org:"OBA", age:"", note:"Voorlezen voor de allerkleinste." },
+
+  { venue:"rupare", dates:["2026-10-09"], time:null, title:"Voorlezen", org:"Samenwonen-Samenleven", age:"", tbc:true, note:"Een verhaal over de betekenis van thuis." },
+
+  { venue:"osdorp", dates:["2026-10-10"], time:"11:30", title:"Polish Reading Art Adventure", org:"Art Connects New West (Iza & Liam)", age:"2–6 jaar", note:"Pools voorlezen met Iza en creativiteit met Art Connects!" },
+  { venue:"natuurkamer", dates:["2026-10-11"], time:"10:00", title:"Greek Mamas NL x Dads Do Art Adventure", org:"Dads Do Art / Greek Mamas NL (Vivi & Liam)", age:"2–6 jaar", note:"Grieks voorlezen met Vivi en Liam met creativiteit van Dads Do Art!" },
+  { venue:"osdorp", dates:["2026-10-11"], time:"16:00", title:"Spanish Reading Art Adventure", org:"Dads Do Art / Spanish Mamas (Alba & Esperanza)", age:"2–6 jaar", note:"Spaans voorlezen door Alba en Esperanza en creativiteit met Dads Do Art!" }
 ];
 
 /* ---------------------------------------------------------------------
